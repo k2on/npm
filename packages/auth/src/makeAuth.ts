@@ -7,8 +7,8 @@ export const makeAuth =
         const token = headers.get("authorization");
         if (!token) return null;
 
-        const users = await authConfig.db.getUsers();
-        console.log("users", users);
+        // const users = await authConfig.db.getUsers();
+        // console.log("users", users);
 
         // const updated = await db
         //     .update(schema.sessions)

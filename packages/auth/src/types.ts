@@ -1,12 +1,9 @@
-import { Adapter } from "./db";
-
 export type Providers = Record<string, AuthProvider>;
 
 export type OAuthProviders = Record<string, OAuthProviderConfig<any>>;
 export type OTPProviders = Record<string, OTPAuthProviderConfig<any>>;
 
 export interface TAuthConfig {
-    db: Adapter;
     providers: {
         oauth?: OAuthProviders;
         otp?: OTPProviders;
