@@ -1,4 +1,15 @@
 {
-  "extends": "../../tsconfig.json",
-  "include": ["src"]
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,  // This can help if there are issues with type declarations
+    "strict": true,
+    "declaration": true,
+    "target": "es5",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

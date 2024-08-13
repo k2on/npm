@@ -8,7 +8,9 @@ export interface GithubProfile {
     avatar_url: string;
 }
 
-export const Github = (options: OAuthOptions): OAuthProviderConfig<GithubProfile> => ({
+export const Github = (
+    options: OAuthOptions
+): OAuthProviderConfig<GithubProfile> => ({
     id: "github",
     label: "Github",
     type: "oauth",
@@ -22,8 +24,9 @@ export const Github = (options: OAuthOptions): OAuthProviderConfig<GithubProfile
             name: profile.name || profile.login,
             email: profile.email,
             image: profile.avatar_url,
-          }
+        };
     },
     ...options,
-})
+});
 
+export * from "./api";
