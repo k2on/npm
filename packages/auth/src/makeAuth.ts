@@ -7,25 +7,16 @@ export const makeAuth =
         const token = headers.get("authorization");
         if (!token) return null;
 
-        // const users = await authConfig.db.getUsers();
-        // console.log("users", users);
-
-        // const updated = await db
-        //     .update(schema.sessions)
-        //     .set({ lastUsedAt: new Date() })
-        //     .where(
-        //         and(
-        //             eq(schema.sessions.sessionToken, token),
-        //             isNull(schema.sessions.revokedAt)
-        //         )
-        //     )
-        //     .returning();
-        const session: any = null;
+        const updated =
+            await authConfig.db.getSessionFromTokenAndUpdateLastUsedAt(token);
+        if (!updated) return null;
+        const session = updated.at(0);
 
         if (!session) return null;
         return {
             id: session.id,
             userId: session.userId,
+            user: () => authConfig.db.getUserFromId(session.userId),
             // user: () =>
             // db.query.users.findFirst({
             //     where: eq(schema.users.id, session.userId),

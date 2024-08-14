@@ -1,15 +1,18 @@
-import {
-    PgColumn,
-    PgDatabase,
-    PgTableWithColumns,
-    TableConfig,
-} from "drizzle-orm/pg-core";
+import { PgColumn, PgDatabase, PgTableWithColumns } from "drizzle-orm/pg-core";
 import { User } from "./session";
-import { Table } from "drizzle-orm";
-import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { and, eq, isNull } from "drizzle-orm";
+
+export interface SessionObj {
+    id: string;
+    userId: string;
+}
 
 export abstract class Adapter {
-    abstract getUsers(): Promise<User[] | null>;
+    abstract getSessionFromTokenAndUpdateLastUsedAt(
+        token: string,
+    ): Promise<SessionObj[] | null>;
+
+    abstract getUserFromId(id: string): Promise<User | null>;
 }
 
 export class DrizzlePostgres extends Adapter {
@@ -18,13 +21,32 @@ export class DrizzlePostgres extends Adapter {
             db: PgDatabase<any, any>;
             users: PostgreSQLUserTable;
             sessions: PostgreSQLSessionTable;
-        }
+        },
     ) {
         super();
     }
 
-    async getUsers(): Promise<User[] | null> {
-        return await this.config.db.select().from(this.config.users);
+    async getSessionFromTokenAndUpdateLastUsedAt(
+        token: string,
+    ): Promise<SessionObj[] | null> {
+        return await this.config.db
+            .update(this.config.sessions)
+            .set({ lastUsedAt: new Date() })
+            .where(
+                and(
+                    eq(this.config.sessions.sessionToken, token),
+                    isNull(this.config.sessions.revokedAt),
+                ),
+            )
+            .returning();
+    }
+
+    async getUserFromId(id: string): Promise<User | null> {
+        const [user] = await this.config.db
+            .select()
+            .from(this.config.users)
+            .where(eq(this.config.users.id, id));
+        return user || null;
     }
 }
 
@@ -77,6 +99,34 @@ export type PostgreSQLSessionTable = PgTableWithColumns<{
             },
             {}
         >;
+        revokedAt: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: Date;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        lastUsedAt: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: Date;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
         expires: PgColumn<
             {
                 dataType: any;
@@ -85,6 +135,20 @@ export type PostgreSQLSessionTable = PgTableWithColumns<{
                 tableName: any;
                 columnType: any;
                 data: Date;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        sessionToken: PgColumn<
+            {
+                dataType: any;
+                notNull: true;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: string;
                 driverParam: any;
                 hasDefault: false;
                 name: any;
