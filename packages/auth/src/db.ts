@@ -7,12 +7,62 @@ export interface SessionObj {
     userId: string;
 }
 
+export interface Account {
+    userId: string;
+}
+
 export abstract class Adapter {
     abstract getSessionFromTokenAndUpdateLastUsedAt(
-        token: string,
+        token: string
     ): Promise<SessionObj[] | null>;
 
     abstract getUserFromId(id: string): Promise<User | null>;
+
+    abstract getAccountFromProviderAccountId(options: {
+        provider: string;
+        userId: string;
+    }): Promise<Account | null>;
+
+    abstract getUserFromEmail(email: string): Promise<User | null>;
+
+    abstract createUser(input: {
+        id: string;
+        name: string;
+        email: string;
+        profileImageUrl: string | null;
+    }): Promise<void>;
+
+    abstract createAccount(input: {
+        userId: string;
+        type: string;
+        provider: string;
+        providerAccountId: string;
+        refresh_token: string | null;
+        access_token: string;
+        expires_at: number;
+        token_type: string;
+        scope: string;
+        id_token: any;
+        session_state: any;
+    }): Promise<void>;
+
+    abstract createSession(input: {
+        id: string;
+        userId: string;
+        sessionToken: string;
+        expires: Date;
+        agent: string;
+        ip: string;
+    }): Promise<void>;
+
+    abstract getSessionsForUser(userId: string): Promise<SessionObj[]>;
+
+    abstract revokeSession(id: string): Promise<void>;
+    abstract revokeAllFromUser(id: string): Promise<void>;
+    abstract getSessionForUserFromId(options: {
+        sessionId: string;
+        userId: string;
+    }): Promise<SessionObj | null>;
 }
 
 export class DrizzlePostgres extends Adapter {
@@ -21,13 +71,13 @@ export class DrizzlePostgres extends Adapter {
             db: PgDatabase<any, any>;
             users: PostgreSQLUserTable;
             sessions: PostgreSQLSessionTable;
-        },
+        }
     ) {
         super();
     }
 
     async getSessionFromTokenAndUpdateLastUsedAt(
-        token: string,
+        token: string
     ): Promise<SessionObj[] | null> {
         return await this.config.db
             .update(this.config.sessions)
@@ -35,8 +85,8 @@ export class DrizzlePostgres extends Adapter {
             .where(
                 and(
                     eq(this.config.sessions.sessionToken, token),
-                    isNull(this.config.sessions.revokedAt),
-                ),
+                    isNull(this.config.sessions.revokedAt)
+                )
             )
             .returning();
     }
