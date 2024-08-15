@@ -2,6 +2,7 @@ import { PgColumn, PgDatabase, PgTableWithColumns } from "drizzle-orm/pg-core";
 import { User } from "./session";
 import { and, eq, isNull } from "drizzle-orm";
 
+// TODO: infer these from the table definitions
 export interface SessionObj {
     id: string;
     userId: string;
@@ -9,6 +10,10 @@ export interface SessionObj {
 
 export interface Account {
     userId: string;
+    access_token: string | null;
+    refresh_token: string | null;
+    expires_at: number | null;
+    scope: string | null;
 }
 
 export interface SessionForUser {
@@ -72,6 +77,10 @@ export abstract class Adapter {
         sessionId: string;
         userId: string;
     }): Promise<SessionObj | null>;
+    abstract getAccountForProviderByUserId(options: {
+        userId: string;
+        provider: string;
+    }): Promise<Account | null>;
 }
 
 export class DrizzlePostgres extends Adapter {
@@ -216,6 +225,22 @@ export class DrizzlePostgres extends Adapter {
                 )
             );
         return session || null;
+    }
+
+    async getAccountForProviderByUserId(options: {
+        userId: string;
+        provider: string;
+    }): Promise<Account | null> {
+        const [account] = await this.config.db
+            .select()
+            .from(this.config.accounts)
+            .where(
+                and(
+                    eq(this.config.accounts.userId, options.userId),
+                    eq(this.config.accounts.provider, options.provider)
+                )
+            );
+        return account || null;
     }
 }
 
@@ -434,6 +459,62 @@ export type PostgreSQLAccountTable = PgTableWithColumns<{
             {
                 dataType: any;
                 notNull: true;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: string;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        access_token: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: string;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        refresh_token: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: string;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        expires_at: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: number;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        scope: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
                 enumValues: any;
                 tableName: any;
                 columnType: any;

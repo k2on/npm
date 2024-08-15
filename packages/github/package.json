@@ -1,6 +1,6 @@
 {
     "name": "@koons/github",
-    "version": "1.0.11",
+    "version": "1.0.14",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "scripts": {
@@ -14,7 +14,7 @@
         "typescript": "^5.3.3"
     },
     "dependencies": {
-        "@koons/auth": "1.0.11",
+        "@koons/auth": "1.0.12",
         "@trpc/server": "10.44.1"
     }
 }

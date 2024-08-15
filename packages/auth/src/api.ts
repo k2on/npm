@@ -9,17 +9,21 @@ import { randomUUID } from "crypto";
 //     ],
 // );
 
-type Context = {
+export type ContextSession = {
+    id: string;
+    userId: string;
+};
+
+export type Context = {
+    session: ContextSession | null;
     from: {
         agent: string;
         ip: string;
     };
 };
-type ContextAuthed = {
-    session: {
-        id: string;
-        userId: string;
-    };
+
+export type ContextAuthed = {
+    session: ContextSession;
     from: {
         agent: string;
         ip: string;

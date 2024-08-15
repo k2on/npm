@@ -5,3 +5,4 @@ export * from "./db";
 export * from "./makeAuth";
 export * from "./session";
 export * from "./api";
+export * from "./middleware";

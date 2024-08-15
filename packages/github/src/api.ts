@@ -8,8 +8,8 @@ export class GithubClient {
         url: string,
         method: "POST" | "GET" | "PUT" | "PATCH",
         responseSchema: T,
-        body?: Record<string, unknown>,
-    ) {
+        body?: Record<string, unknown>
+    ): Promise<z.infer<T>> {
         return SendFetch(url, method, responseSchema, this.token, body);
     }
 
@@ -20,7 +20,7 @@ export class GithubClient {
     public async post<T extends ZodSchema>(
         url: string,
         responseSchema: T,
-        body: Record<string, unknown>,
+        body: Record<string, unknown>
     ) {
         return await this.fetch(url, "POST", responseSchema, body);
     }
@@ -28,7 +28,7 @@ export class GithubClient {
     public async patch<T extends ZodSchema>(
         url: string,
         responseSchema: T,
-        body: Record<string, unknown>,
+        body: Record<string, unknown>
     ) {
         return await this.fetch(url, "PATCH", responseSchema, body);
     }
@@ -49,7 +49,7 @@ export const userRepositoriesResponseSchema = z.array(
     z.object({
         id: z.number(),
         name: z.string(),
-    }),
+    })
 );
 
 export const listReposOptionsSchema = z.object({
@@ -65,7 +65,7 @@ export class User {
         return await this.client.get(
             "https://api.github.com/user/repos?" +
                 new URLSearchParams(options).toString(),
-            userRepositoriesResponseSchema,
+            userRepositoriesResponseSchema
         );
     }
 }
@@ -107,7 +107,7 @@ export const getGetCommitResponseSchema = z.object({
     message: z.string(),
     tree: z.object({ url: z.string(), sha: z.string() }),
     parents: z.array(
-        z.object({ url: z.string(), sha: z.string(), html_url: z.string() }),
+        z.object({ url: z.string(), sha: z.string(), html_url: z.string() })
     ),
     verification: z.object({
         verified: z.boolean(),
@@ -123,7 +123,7 @@ export class Git {
     public async getRef(options: z.infer<typeof getRefOptionsSchema>) {
         return await this.client.get(
             `https://api.github.com/repos/${options.owner}/${options.repo}/git/ref/${options.ref}`,
-            getGetRefResponseSchema,
+            getGetRefResponseSchema
         );
     }
 
@@ -147,19 +147,19 @@ export class Git {
     });
 
     public async updateRef(
-        options: z.infer<typeof this.updateRefOptionsSchema>,
+        options: z.infer<typeof this.updateRefOptionsSchema>
     ) {
         return await this.client.patch(
             `https://api.github.com/repos/${options.owner}/${options.repo}/git/refs/${options.ref}`,
             this.updateRefResponseSchema,
-            { sha: options.sha, force: options.force },
+            { sha: options.sha, force: options.force }
         );
     }
 
     public async getCommit(options: z.infer<typeof getCommitOptionsSchema>) {
         return await this.client.get(
             `https://api.github.com/repos/${options.owner}/${options.repo}/git/commits/${options.commit_sha}`,
-            getGetCommitResponseSchema,
+            getGetCommitResponseSchema
         );
     }
 
@@ -176,12 +176,12 @@ export class Git {
     });
 
     public async createBlob(
-        options: z.infer<typeof this.createBlobOptionsSchema>,
+        options: z.infer<typeof this.createBlobOptionsSchema>
     ) {
         return await this.client.post(
             `https://api.github.com/repos/${options.owner}/${options.repo}/git/blobs`,
             this.createBlobResponseSchema,
-            { content: options.content, encoding: options.encoding || "utf-8" },
+            { content: options.content, encoding: options.encoding || "utf-8" }
         );
     }
 
@@ -195,7 +195,7 @@ export class Git {
                 mode: z.string(),
                 type: z.string(),
                 sha: z.string(),
-            }),
+            })
         ),
     });
 
@@ -210,18 +210,18 @@ export class Git {
                 size: z.number().optional(),
                 sha: z.string(),
                 url: z.string(),
-            }),
+            })
         ),
         truncated: z.boolean(),
     });
 
     public async createTree(
-        options: z.infer<typeof this.createTreeOptionsSchema>,
+        options: z.infer<typeof this.createTreeOptionsSchema>
     ) {
         return await this.client.post(
             `https://api.github.com/repos/${options.owner}/${options.repo}/git/trees`,
             this.createTreeResponseSchema,
-            { base_tree: options.base_tree, tree: options.tree },
+            { base_tree: options.base_tree, tree: options.tree }
         );
     }
 
@@ -262,7 +262,7 @@ export class Git {
                 url: z.string(),
                 sha: z.string(),
                 html_url: z.string(),
-            }),
+            })
         ),
         verification: z.object({
             verified: z.boolean(),
@@ -274,7 +274,7 @@ export class Git {
     });
 
     public async createCommit(
-        options: z.infer<typeof this.createCommitOptionsSchema>,
+        options: z.infer<typeof this.createCommitOptionsSchema>
     ) {
         return await this.client.post(
             `https://api.github.com/repos/${options.owner}/${options.repo}/git/commits`,
@@ -290,8 +290,7 @@ export class Git {
                     : undefined,
                 parents: options.parents,
                 signature: options.signature,
-            },
+            }
         );
     }
 }
-
