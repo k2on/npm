@@ -89,6 +89,7 @@ export function makeRoutes(auth: TAuthConfig) {
             }) => {
                 if (!auth.providers.oauth) throw Error("No oauth providers");
                 const config = auth.providers.oauth[input.provider];
+                if (!config) throw Error("Provider not found");
                 const provider = new OAuthProvider(config);
                 const token = await provider.getToken(input);
                 console.log("token", token);
@@ -99,22 +100,13 @@ export function makeRoutes(auth: TAuthConfig) {
                     userId: user.id,
                 });
 
-                // const account = await ctx.db.query.accounts.findFirst({
-                //     where: and(
-                //         eq(schema.accounts.provider, input.provider),
-                //         eq(schema.accounts.providerAccountId, user.id),
-                //     ),
-                // });
-
                 const id = randomUUID();
                 const sessionToken = randomUUID();
                 if (!account) {
                     const userWithEmail = await auth.db.getUserFromEmail(
                         user.email
                     );
-                    // const userWithEmail = await ctx.db.query.users.findFirst({
-                    //     where: eq(schema.users.email, user.email),
-                    // });
+
                     if (userWithEmail)
                         throw new Error(
                             "A user with this email already exists"
@@ -128,12 +120,7 @@ export function makeRoutes(auth: TAuthConfig) {
                         email: user.email,
                         profileImageUrl: user.image || null,
                     });
-                    // await ctx.db.insert(schema.users).values({
-                    //     id: userId,
-                    //     name: user.name,
-                    //     email: user.email,
-                    //     profileImageUrl: user.image,
-                    // });
+
                     await auth.db.createAccount({
                         userId,
                         type: "oauth",
@@ -147,20 +134,8 @@ export function makeRoutes(auth: TAuthConfig) {
                         id_token: undefined,
                         session_state: undefined,
                     });
-                    // await ctx.db.insert(schema.accounts).values({
-                    //     userId,
-                    //     type: "oauth",
-                    //     provider: input.provider,
-                    //     providerAccountId: user.id,
-                    //     refresh_token: token.getRefreshToken(),
-                    //     access_token: token.getAccessToken(),
-                    //     expires_at: token.getExpiresAt(),
-                    //     token_type: "idk",
-                    //     scope: token.getScope(),
-                    //     id_token: undefined,
-                    //     session_state: undefined,
-                    // });
-                    auth.db.createSession({
+
+                    await auth.db.createSession({
                         id,
                         userId,
                         sessionToken,
@@ -171,17 +146,7 @@ export function makeRoutes(auth: TAuthConfig) {
                         agent: ctx.from.agent,
                         ip: ctx.from.ip,
                     });
-                    // await ctx.db.insert(schema.sessions).values({
-                    //     id,
-                    //     userId,
-                    //     sessionToken,
-                    //     expires: new Date(
-                    //         new Date().getTime() +
-                    //             1000 * 60 * 60 * 24 * 365 * 10,
-                    //     ),
-                    //     agent: ctx.from.agent,
-                    //     ip: ctx.from.ip,
-                    // });
+
                     return sessionToken as string;
                 } else {
                     auth.db.createSession({
@@ -195,17 +160,7 @@ export function makeRoutes(auth: TAuthConfig) {
                         agent: ctx.from.agent,
                         ip: ctx.from.ip,
                     });
-                    // await ctx.db.insert(schema.sessions).values({
-                    //     id,
-                    //     userId: account.userId,
-                    //     sessionToken,
-                    //     expires: new Date(
-                    //         new Date().getTime() +
-                    //             1000 * 60 * 60 * 24 * 365 * 10,
-                    //     ),
-                    //     agent: ctx.from.agent,
-                    //     ip: ctx.from.ip,
-                    // });
+
                     return sessionToken as string;
                 }
             },
@@ -213,41 +168,17 @@ export function makeRoutes(auth: TAuthConfig) {
         listSessions: {
             query: async ({ ctx }: { ctx: ContextAuthed }) => {
                 return await auth.db.getSessionsForUser(ctx.session.userId);
-                // return ctx.db
-                //     .select({
-                //         id: schema.sessions.id,
-                //         agent: schema.sessions.agent,
-                //         ip: schema.sessions.ip,
-                //         expires: schema.sessions.expires,
-                //         createdAt: schema.sessions.createdAt,
-                //         lastUsedAt: schema.sessions.lastUsedAt,
-                //     })
-                //     .from(schema.sessions)
-                //     .where(
-                //         and(
-                //             eq(schema.sessions.userId, ctx.session.userId),
-                //             isNull(schema.sessions.revokedAt),
-                //         ),
-                //     );
             },
         },
         logout: {
             mutation: async ({ ctx }: { ctx: ContextAuthed }) => {
                 await auth.db.revokeSession(ctx.session.id);
-                // await ctx.db
-                //     .update(schema.sessions)
-                //     .set({ revokedAt: new Date() })
-                //     .where(eq(schema.sessions.id, ctx.session.id));
                 return true;
             },
         },
         revokeAll: {
             mutation: async ({ ctx }: { ctx: ContextAuthed }) => {
                 await auth.db.revokeAllFromUser(ctx.session.userId);
-                // await ctx.db
-                //     .update(schema.sessions)
-                //     .set({ revokedAt: new Date() })
-                //     .where(eq(schema.sessions.userId, ctx.session.userId));
                 return true;
             },
         },
@@ -264,12 +195,6 @@ export function makeRoutes(auth: TAuthConfig) {
                     sessionId: input.id,
                     userId: ctx.session.userId,
                 });
-                // const session = await ctx.db.query.sessions.findFirst({
-                //     where: and(
-                //         eq(schema.sessions.id, input.id),
-                //         eq(schema.sessions.userId, ctx.session.userId),
-                //     ),
-                // });
                 if (!session) throw new Error("Session not found");
                 await auth.db.revokeSession(input.id);
                 // await ctx.db

@@ -4,3 +4,4 @@ export * from "./oauth";
 export * from "./db";
 export * from "./makeAuth";
 export * from "./session";
+export * from "./api";
