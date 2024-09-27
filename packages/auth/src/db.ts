@@ -39,12 +39,23 @@ export abstract class Adapter {
 
     abstract getUserFromEmail(email: string): Promise<User | null>;
 
-    abstract createUser(input: {
-        id: string;
-        name: string;
-        email: string;
-        profileImageUrl: string | null;
-    }): Promise<void>;
+    abstract createUser(
+        input:
+            | {
+                  id: string;
+                  name: string;
+                  email: string;
+                  phone: string | null;
+                  profileImageUrl: string | null;
+              }
+            | {
+                  id: string;
+                  name: string;
+                  email: string | null;
+                  phone: string;
+                  profileImageUrl: string | null;
+              }
+    ): Promise<void>;
 
     abstract createAccount(input: {
         userId: string;
@@ -81,6 +92,7 @@ export abstract class Adapter {
         userId: string;
         provider: string;
     }): Promise<Account | null>;
+    abstract getUserFromPhone(phone: string): Promise<User | null>;
 }
 
 export class DrizzlePostgres extends Adapter {
@@ -146,6 +158,7 @@ export class DrizzlePostgres extends Adapter {
         id: string;
         name: string;
         email: string;
+        phone: string;
         profileImageUrl: string | null;
     }): Promise<void> {
         await this.config.db.insert(this.config.users).values(input);
@@ -242,6 +255,14 @@ export class DrizzlePostgres extends Adapter {
             );
         return account || null;
     }
+
+    async getUserFromPhone(phone: string): Promise<User | null> {
+        const [user] = await this.config.db
+            .select()
+            .from(this.config.users)
+            .where(eq(this.config.users.phone, phone));
+        return user || null;
+    }
 }
 
 export interface Register {}
@@ -270,6 +291,20 @@ export type PostgreSQLUserTable = PgTableWithColumns<{
             },
             {}
         >;
+        name: PgColumn<
+            {
+                dataType: any;
+                notNull: true;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: string;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
         email: PgColumn<
             {
                 dataType: any;
@@ -278,6 +313,34 @@ export type PostgreSQLUserTable = PgTableWithColumns<{
                 tableName: any;
                 columnType: any;
                 data: UserId;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        phone: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: UserId;
+                driverParam: any;
+                hasDefault: false;
+                name: any;
+            },
+            {}
+        >;
+        profileImageUrl: PgColumn<
+            {
+                dataType: any;
+                notNull: false;
+                enumValues: any;
+                tableName: any;
+                columnType: any;
+                data: string;
                 driverParam: any;
                 hasDefault: false;
                 name: any;

@@ -38,6 +38,13 @@ export function makeRoutes(auth: TAuthConfig) {
               ]
           )
         : z.enum([""]); // TODO: FIX ME
+    const OTPProviderValidator = auth.providers.otp
+        ? z.enum(
+              Object.keys(auth.providers.otp) as [
+                  keyof typeof auth.providers.otp
+              ]
+          )
+        : z.enum([""]); // TODO: FIX ME
 
     const oauthCallbackInput = z.object({
         code: z.string(),
@@ -47,21 +54,34 @@ export function makeRoutes(auth: TAuthConfig) {
 
     const revokeInput = z.object({ id: z.string() });
 
+    const sendOtpInput = z.object({
+        provider: OTPProviderValidator,
+        input: z.any(),
+    });
+
+    const verifyOtpInput = z.object({
+        provider: OTPProviderValidator,
+        input: z.any(),
+        code: z.string(),
+    });
+
     return {
         config: {
             query: () => ({
-                // otp: Object.fromEntries(
-                //     Object.entries(authConfig.providers.otp).map(
-                //         ([key, config]) => [
-                //             key,
-                //             {
-                //                 type: "otp" as const,
-                //                 id: config.id,
-                //                 label: config.label,
-                //             },
-                //         ],
-                //     ),
-                // ),
+                otp:
+                    auth.providers.otp &&
+                    Object.fromEntries(
+                        Object.entries(auth.providers.otp).map(
+                            ([key, config]) => [
+                                key,
+                                {
+                                    type: "otp" as const,
+                                    id: config.id,
+                                    label: config.label,
+                                },
+                            ]
+                        )
+                    ),
                 oauth:
                     auth.providers.oauth &&
                     Object.fromEntries(
@@ -122,6 +142,7 @@ export function makeRoutes(auth: TAuthConfig) {
                         id: userId,
                         name: user.name,
                         email: user.email,
+                        phone: null,
                         profileImageUrl: user.image || null,
                     });
 
@@ -165,6 +186,78 @@ export function makeRoutes(auth: TAuthConfig) {
                         ip: ctx.from.ip,
                     });
 
+                    return sessionToken as string;
+                }
+            },
+        },
+        sendOtp: {
+            input: sendOtpInput,
+            mutation: async ({
+                ctx,
+                input,
+            }: {
+                ctx: Context;
+                input: z.infer<typeof sendOtpInput>;
+            }) => {
+                if (!auth.providers.otp) throw Error("No otp providers");
+                const config = auth.providers.otp[input.provider];
+                if (!config) throw Error("Provider not found");
+                return await config.sendCode(input.input);
+            },
+        },
+        verifyOtp: {
+            input: verifyOtpInput,
+            mutation: async ({
+                ctx,
+                input,
+            }: {
+                ctx: Context;
+                input: z.infer<typeof verifyOtpInput>;
+            }) => {
+                if (!auth.providers.otp) throw Error("No otp providers");
+                const config = auth.providers.otp[input.provider];
+                if (!config) throw Error("Provider not found");
+                const valid = await config.verifyCode(input.input, input.code);
+                if (!valid) throw Error("Invalid code");
+                if (config.columnName != "phone") {
+                    throw Error("Invalid column name: " + config.columnName);
+                }
+                const user = await auth.db.getUserFromPhone(input.input.phone);
+                const id = randomUUID();
+                const sessionToken = randomUUID();
+                if (user) {
+                    auth.db.createSession({
+                        id,
+                        userId: user.id,
+                        sessionToken,
+                        expires: new Date(
+                            new Date().getTime() +
+                                1000 * 60 * 60 * 24 * 365 * 10
+                        ),
+                        agent: ctx.from.agent,
+                        ip: ctx.from.ip,
+                    });
+                    return sessionToken as string;
+                } else {
+                    const userId = randomUUID();
+                    await auth.db.createUser({
+                        id: userId,
+                        name: "",
+                        phone: input.input.phone,
+                        email: null,
+                        profileImageUrl: null,
+                    });
+                    auth.db.createSession({
+                        id,
+                        userId: userId,
+                        sessionToken,
+                        expires: new Date(
+                            new Date().getTime() +
+                                1000 * 60 * 60 * 24 * 365 * 10
+                        ),
+                        agent: ctx.from.agent,
+                        ip: ctx.from.ip,
+                    });
                     return sessionToken as string;
                 }
             },
